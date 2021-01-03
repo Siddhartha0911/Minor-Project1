@@ -1,0 +1,116 @@
+```{r}
+library("readr")
+library("dplyr")
+library("ggplot2")
+library("corrplot")
+library("gridExtra")
+library("pROC")
+```
+
+```{r}
+library("MASS")
+library("caTools")
+library("caret")
+```
+
+```{r}
+data <- read.csv("C:/Users/KIIT/Documents/Advance Programming/Mini Project/breast_cancer.csv")
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+data$diagnosis <- as.factor(data$diagnosis)
+
+data[,33] <- NULL
+
+summary(data)
+```
+
+```{r}
+prop.table(table(data$diagnosis))
+```
+```{r}
+plot(data$diagnosis)
+```
+```{r}
+corr <- cor(data[,3:ncol(data)])
+corrplot(corr)
+```
+
+```{r}
+plot ( density ( data$radius_mean  ) )
+plot ( density ( data$texture_mean ) )
+plot ( density ( data$perimeter_mean ) )
+plot ( density ( data$area_mean) )
+plot ( density ( data$smoothness_mean ) )
+plot ( density ( data$compactness_mean ) )
+plot ( density ( data$concavity_mean ) )
+plot ( density ( data$concave.points_mean ) )
+plot ( density ( data$symmetry_mean ) )
+plot ( density ( data$fractal_dimension_mean ) )
+plot ( density ( data$radius_se ) )
+plot ( density ( data$texture_se ) )
+plot ( density ( data$perimeter_se ) )
+plot ( density ( data$area_se ) )
+plot ( density ( data$smoothness_se ) )
+plot ( density ( data$compactness_se ) )
+plot ( density ( data$concavity_se ) )
+plot ( density ( data$concave.points_se ) )
+plot ( density ( data$symmetry_se ) )
+plot ( density ( data$fractal_dimension_se ) )
+plot ( density ( data$radius_worst ) )
+plot ( density ( data$texture_worst ) )
+plot ( density ( data$perimeter_worst ) )
+plot ( density ( data$area_worst ) )
+plot ( density ( data$smoothness_worst ) )
+plot ( density ( data$compactness_worst ) )
+plot ( density ( data$concavity_worst ) )
+plot ( density ( data$concave.points_worst ) )
+plot ( density ( data$symmetry_worst ) )
+plot ( density ( data$fractal_dimension_worst ) )
+```
+
+```{r}
+heatmap(corr)
+```
+
+
+```{r}
+set.seed(1234)
+data_index <- createDataPartition(data$diagnosis, p=0.7, list = FALSE)
+train_data <- data[data_index, -1]
+test_data <- data[-data_index, -1]
+```
+
+```{r}
+fitControl <- trainControl(method="cv",
+                           number = 5,
+                           preProcOptions = list(thresh = 0.9),
+                           classProbs = TRUE,
+                           summaryFunction = twoClassSummary)
+```
+
+```{r}
+model_rf <- train(diagnosis~.,
+                  train_data,
+                  method="ranger",
+                  metric="ROC",
+                  #tuneLength=10,
+                  #tuneGrid = expand.grid(mtry = c(2, 3, 6)),
+                  preProcess = c('center', 'scale'),
+                  trControl=fitControl)
+```
+
+```{r}
+pred_rf <- predict(model_rf, test_data)
+cm_rf <- confusionMatrix(pred_rf, test_data$diagnosis, positive = "M")
+cm_rf
+```
+
+```{r}
+fourfoldplot(cm_rf$table)
+```
+
